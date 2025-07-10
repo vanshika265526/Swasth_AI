@@ -14,6 +14,9 @@ import VoiceAssistantPage from '@/pages/VoiceAssistantPage';
 import SavedResultsPage from '@/pages/SavedResultsPage';
 import ProfilePage from '@/pages/ProfilePage';
 import AdminPage from '@/pages/AdminPage';
+import Login from '@/pages/Login';
+import Signup from '@/pages/Signup';
+import Logout from '@/pages/Logout';
 
 function App() {
   return (
@@ -24,16 +27,21 @@ function App() {
           <Navbar />
           <main className="flex-grow pt-20 pb-24 md:pt-24 md:pb-8">
             <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/recipe-replacer" element={<RecipeReplacerPage />} />
-              <Route path="/prescription-translator" element={<PrescriptionTranslatorPage />} />
-              <Route path="/meal-planner" element={<MealPlannerPage />} />
-              <Route path="/drug-checker" element={<DrugCheckerPage />} />
-              <Route path="/voice-assistant" element={<VoiceAssistantPage />} />
-              <Route path="/saved" element={<SavedResultsPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/admin" element={<AdminPage />} />
+                <Route path="/" element={<HomePage />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+               <Route path="/logout" element={<Logout />} />
+
+                <Route path="/recipe-replacer" element={<RecipeReplacerPage />} />
+                <Route path="/prescription-translator" element={<PrescriptionTranslatorPage />} />
+                <Route path="/meal-planner" element={<MealPlannerPage />} />
+                <Route path="/drug-checker" element={<DrugCheckerPage />} />
+                <Route path="/voice-assistant" element={<VoiceAssistantPage />} />
+                <Route path="/saved" element={<SavedResultsPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/admin" element={<AdminPage />} />
             </Routes>
+
           </main>
           <FloatingActionButton />
           <MobileNav />
