@@ -17,6 +17,7 @@ const navItems = [
   { path: '/prescription-translator', label: 'Prescription Help' },
   { path: '/meal-planner', label: 'Meal Planner' },
   { path: '/drug-checker', label: 'Drug Checker' },
+  { path: '/saved', label: 'Saved' },
 ];
 
 const Navbar = () => {
