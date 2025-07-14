@@ -36,10 +36,10 @@ function App() {
                 <Route path="/prescription-translator" element={<PrescriptionTranslatorPage />} />
                 <Route path="/meal-planner" element={<MealPlannerPage />} />
                 <Route path="/drug-checker" element={<DrugCheckerPage />} />
-                <Route path="/voice-assistant" element={<VoiceAssistantPage />} />
+              
                 <Route path="/saved" element={<SavedResultsPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
-                <Route path="/admin" element={<AdminPage />} />
+                
             </Routes>
 
           </main>
