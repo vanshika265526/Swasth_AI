@@ -1,15 +1,10 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Stethoscope, Moon, Sun, Menu, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useTheme } from '@/components/ThemeProvider';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { Button } from '../ui/button';
+import { useTheme } from '../ThemeProvider';
+import { motion } from 'framer-motion';
+
 
 const navItems = [
   { path: '/', label: 'Home' },
