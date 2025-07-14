@@ -4,7 +4,6 @@ import { Toaster } from './components/ui/toaster';
 import { ThemeProvider } from './components/ThemeProvider';
 import Navbar from './components/layout/Navbar';
 import MobileNav from './components/layout/MobileNav';
-import FloatingActionButton from './components/layout/FloatingActionButton';
 import HomePage from './pages/HomePage';
 import RecipeReplacerPage from './pages/RecipeReplacerPage';
 import PrescriptionTranslatorPage from './pages/PrescriptionTranslatorPage';
@@ -41,7 +40,7 @@ function App() {
             </Routes>
 
           </main>
-          <FloatingActionButton />
+          
           <MobileNav />
           <Toaster />
         </div>
