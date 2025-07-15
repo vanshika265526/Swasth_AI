@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, Camera, FileText, Sparkles, AlertTriangle, Volume2 } from 'lucide-react';
+import { Upload,  FileText,  AlertTriangle, Volume2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Progress } from "@/components/ui/progress"
 import { useToast } from '@/components/ui/use-toast';
