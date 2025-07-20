@@ -8,6 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Upload, Sparkles, ChefHat, Leaf, WheatOff, MilkOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
+import { GoogleGenAI } from '@google/genai';
+
+const ai = new GoogleGenAI({
+  apiKey: import.meta.env.VITE_GEMINI_API_KEY,
+});
 
 const RecipeReplacerPage = () => {
   const [recipeText, setRecipeText] = useState('');
@@ -23,7 +28,21 @@ const RecipeReplacerPage = () => {
   const [newPrefText, setNewPrefText] = useState('');
   const { toast } = useToast();
   const [symptomsText, setSymptomsText] = useState('');
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [extractedText, setExtractedText] = useState('');
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
 
+  React.useEffect(() => {
+    // Dynamically load Puter.js script
+    const script = document.createElement('script');
+    script.src = 'https://js.puter.com/v2/';
+    script.async = true;
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
 
   const handlePreferenceChange = (id) => {
     setPreferences(prev => ({ ...prev, [id]: !prev[id] }));
@@ -49,7 +68,7 @@ const RecipeReplacerPage = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!recipeText.trim()) {
       toast({
@@ -61,19 +80,127 @@ const RecipeReplacerPage = () => {
     }
     setIsLoading(true);
     setResult(null);
-    setTimeout(() => {
-      // Mock AI response
+
+    try {
+      
+      const preferencesList = Object.entries(preferences)
+        .filter(([_, value]) => value)
+        .map(([key, _]) => key)
+        .join(', ');
+
+      const formatPrompt = `You are a health-focused AI assistant.
+
+A user will give:
+1. A list of symptoms (e.g., fever, cold, headache)
+2. A list of foods they are currently consuming that may not be ideal for those symptoms (e.g., meat, alcohol, hot Cheetos)
+
+Your tasks:
+1. For each food item, suggest 5 to 7 healthier and symptom-friendly alternatives, especially considering dietary preferences like vegan, Jain, gluten-free, dairy-free, etc.
+2. Then, provide 5 to 7 practical health tips that are relevant across all the symptoms provided.
+
+🧠 Format your response **exactly like this**:
+
+<Original Food 1> => <Alternative 1>, <Alternative 2>, ..., <Alternative 7>  
+<Original Food 2> => <Alternative 1>, <Alternative 2>, ..., <Alternative 7>  
+...continue for all foods
+
+Tips for <symptom 1>, <symptom 2>, <symptom 3>:
+- Tip 1
+- Tip 2
+- Tip 3
+- Tip 4
+- Tip 5
+- Tip 6
+- Tip 7
+
+🧪 Example Input:
+Symptoms: Fever, Cold, Headache  
+Foods: Meat, Alcohol, Hot Cheetos
+
+🎯 Example Output:
+Meat => Tofu, Lentils, Rice, Chickpeas, Mashed Potatoes, Mushrooms, Seitan  
+Alcohol => Coconut Water, Lemon Water, Herbal Tea, ORS, Ginger Tea, Buttermilk, Warm Water  
+Hot Cheetos => Baked Veggie Chips, Roasted Chickpeas, Plain Popcorn, Steamed Veggies, Rice Crackers, Boiled Sweet Potato, Carrot Sticks  
+
+Tips for fever, cold and headache:
+- Avoid cold showers or sudden temperature changes
+- Drink warm fluids like ginger tea or warm water
+- Avoid alcohol and caffeine
+- Rest well and avoid screen exposure
+- Eat light, non-oily, nutrient-rich meals
+- Keep your body warm and stay hydrated
+- Do not self-medicate or overuse painkillers
+
+Always use this format, and adapt alternatives and tips based on the symptoms and food given by the user.`;
+
+      const inputContent = `${formatPrompt}\n\nSymptom: ${symptomsText}\nFood: ${recipeText}`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: inputContent,
+      });
+
+      console.log("Gemini API raw response:", response);
+
+      
+      const responseText = response.candidates && response.candidates.length > 0
+        ? response.candidates[0].content.text
+        : "";
+
+      
+      const finalResponseText = responseText || (typeof response.text === 'function' ? await response.text() : response.text || "");
+
+   
+      let swaps = [];
+      let nutrition = {};
+      try {
+        
+        const parsed = JSON.parse(finalResponseText);
+        swaps = parsed.swaps || [];
+        nutrition = parsed.nutrition || {};
+      } catch {
+        
+        swaps = [];
+        nutrition = {};
+        
+        if (typeof finalResponseText === 'string') {
+          
+          const swapMatches = finalResponseText.match(/- Original: (.+?)\n- Swapped: (.+?)\n- Reason: (.+?)(?=\n|$)/g);
+          if (swapMatches) {
+            const swapMap = {};
+            swapMatches.forEach(match => {
+              const parts = match.split('\n');
+              const original = parts[0].replace('- Original: ', '').trim();
+              const swapped = parts[1].replace('- Swapped: ', '').trim();
+              if (!swapMap[original]) {
+                swapMap[original] = [];
+              }
+              swapMap[original].push(swapped);
+            });
+            
+            swaps = Object.entries(swapMap).map(([from, toArray]) => ({ from, toArray }));
+          }
+          
+        } else {
+          console.error("Expected finalResponseText to be a string but got:", typeof finalResponseText, finalResponseText);
+        }
+      }
       setResult({
         original: recipeText,
-        converted: "Here's the new and improved, allergy-friendly version of your recipe...",
-        swaps: [
-          { from: '1 cup milk', to: '1 cup almond milk', reason: 'Replaced dairy with a plant-based alternative.' },
-          { from: '2 eggs', to: '2 tbsp flaxseed meal + 6 tbsp water', reason: 'Standard vegan egg replacement.' },
-        ],
-        nutrition: { calories: 350, protein: '15g', carbs: '40g', fat: '15g' }
+        converted: finalResponseText,
+        swaps,
+        nutrition,
       });
+    } catch (error) {
+      console.error("Gemini API error:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: `Failed to transform recipe: ${error.message || error}. Please try again later.`,
+      });
+    } finally {
       setIsLoading(false);
-    }, 2500);
+    }
   };
 
   return (
@@ -86,7 +213,7 @@ const RecipeReplacerPage = () => {
       <div className="main-container">
         <div className="text-center">
           <h1 className="page-title">AI Recipe Replacer</h1>
-          <p className="page-description">Transform any recipe to fit your dietary needs. Just paste your recipe, select your preferences, and let our AI do the rest!</p>
+          <p className="page-description text-center">Transform any recipe to fit your dietary needs. Just paste your recipe, select your preferences, and let our AI do the rest!</p>
         </div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
@@ -202,7 +329,8 @@ const RecipeReplacerPage = () => {
         </motion.div>
 
         <AnimatePresence>
-          {result && (
+        {result && (
+          <>
             <motion.div
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
@@ -215,20 +343,50 @@ const RecipeReplacerPage = () => {
                 <CardHeader>
                   <CardTitle>Ingredient Swaps</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <ul className="space-y-4">
-                    {result.swaps.map((swap, index) => (
-                      <li key={index} className="p-4 bg-background/50 rounded-lg">
-                        <p><span className="font-bold text-destructive">Original:</span> {swap.from}</p>
-                        <p><span className="font-bold text-green-500">Swapped:</span> {swap.to}</p>
-                        <p className="text-sm text-muted-foreground mt-1"><span className="font-semibold">Reason:</span> {swap.reason}</p>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
+              <CardContent>
+                <div className="text-base text-white whitespace-pre-wrap">
+                  {result.converted.split('\n').map((line, idx) => {
+                    if (line.startsWith('Tips for')) {
+                      return (
+                        <p key={idx} className="mt-4 font-semibold text-2xl text-white">
+                          {line}
+                        </p>
+                      );
+                    } else if (line.startsWith('- ')) {
+                      return (
+                        <p key={idx} className="ml-4 mt-2 font-semibold text-lg text-white">
+                          {line}
+                        </p>
+                      );
+                    } else if (line.includes('=>')) {
+                      return (
+                        <p key={idx} className="font-semibold text-lg text-white">
+                          {line}
+                        </p>
+                      );
+                    } else {
+                      return (
+                        <p key={idx} className="text-white">
+                          {line}
+                        </p>
+                      );
+                    }
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+            {/* Remove debug boxes as per user request */}
+            {/* <div className="mt-8 p-4 bg-yellow-100 rounded-lg text-sm font-mono whitespace-pre-wrap overflow-auto max-h-64">
+              <h3 className="font-bold mb-2">Debug: Raw Swaps Data</h3>
+              {JSON.stringify(result.swaps, null, 2)}
+            </div>
+            <div className="mt-8 p-4 bg-blue-100 rounded-lg text-sm font-mono whitespace-pre-wrap overflow-auto max-h-64">
+              <h3 className="font-bold mb-2">Debug: Full API Response Text</h3>
+              {result.converted}
+            </div> */}
+          </>
+        )}
         </AnimatePresence>
       </div>
     </>
