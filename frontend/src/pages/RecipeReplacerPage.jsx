@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Helmet } from 'react-helmet';
+import { Helmet } from 'react-helmet-async';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,6 +13,7 @@ import { GoogleGenAI } from '@google/genai';
 const ai = new GoogleGenAI({
   apiKey: import.meta.env.VITE_GEMINI_API_KEY,
 });
+
 
 const RecipeReplacerPage = () => {
   const [recipeText, setRecipeText] = useState('');
@@ -32,17 +33,6 @@ const RecipeReplacerPage = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const [extractedText, setExtractedText] = useState('');
   const [isProcessingImage, setIsProcessingImage] = useState(false);
-
-  React.useEffect(() => {
-    // Dynamically load Puter.js script
-    const script = document.createElement('script');
-    script.src = 'https://js.puter.com/v2/';
-    script.async = true;
-    document.body.appendChild(script);
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
 
   const handlePreferenceChange = (id) => {
     setPreferences(prev => ({ ...prev, [id]: !prev[id] }));
@@ -68,6 +58,33 @@ const RecipeReplacerPage = () => {
     });
   };
 
+  const handleImageUpload = async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setIsProcessingImage(true);
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+      setExtractedText('');
+      const formData = new FormData();
+      formData.append('file', file);
+      try {
+        const uploadRes = await fetch('/api/prescriptions/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        if (!uploadRes.ok) throw new Error('Failed to extract text');
+        const data = await uploadRes.json();
+        setExtractedText(data.text || '');
+        setRecipeText(data.text || '');
+        toast({ title: 'OCR Success', description: 'Text extracted from image.' });
+      } catch (err) {
+        toast({ variant: 'destructive', title: 'OCR Error', description: err.message });
+      } finally {
+        setIsProcessingImage(false);
+      }
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!recipeText.trim()) {
@@ -80,123 +97,38 @@ const RecipeReplacerPage = () => {
     }
     setIsLoading(true);
     setResult(null);
-
     try {
-      
       const preferencesList = Object.entries(preferences)
         .filter(([_, value]) => value)
-        .map(([key, _]) => key)
-        .join(', ');
-
-      const formatPrompt = `You are a health-focused AI assistant.
-
-A user will give:
-1. A list of symptoms (e.g., fever, cold, headache)
-2. A list of foods they are currently consuming that may not be ideal for those symptoms (e.g., meat, alcohol, hot Cheetos)
-
-Your tasks:
-1. For each food item, suggest 5 to 7 healthier and symptom-friendly alternatives, especially considering dietary preferences like vegan, Jain, gluten-free, dairy-free, etc.
-2. Then, provide 5 to 7 practical health tips that are relevant across all the symptoms provided.
-
-🧠 Format your response **exactly like this**:
-
-<Original Food 1> => <Alternative 1>, <Alternative 2>, ..., <Alternative 7>  
-<Original Food 2> => <Alternative 1>, <Alternative 2>, ..., <Alternative 7>  
-...continue for all foods
-
-Tips for <symptom 1>, <symptom 2>, <symptom 3>:
-- Tip 1
-- Tip 2
-- Tip 3
-- Tip 4
-- Tip 5
-- Tip 6
-- Tip 7
-
-🧪 Example Input:
-Symptoms: Fever, Cold, Headache  
-Foods: Meat, Alcohol, Hot Cheetos
-
-🎯 Example Output:
-Meat => Tofu, Lentils, Rice, Chickpeas, Mashed Potatoes, Mushrooms, Seitan  
-Alcohol => Coconut Water, Lemon Water, Herbal Tea, ORS, Ginger Tea, Buttermilk, Warm Water  
-Hot Cheetos => Baked Veggie Chips, Roasted Chickpeas, Plain Popcorn, Steamed Veggies, Rice Crackers, Boiled Sweet Potato, Carrot Sticks  
-
-Tips for fever, cold and headache:
-- Avoid cold showers or sudden temperature changes
-- Drink warm fluids like ginger tea or warm water
-- Avoid alcohol and caffeine
-- Rest well and avoid screen exposure
-- Eat light, non-oily, nutrient-rich meals
-- Keep your body warm and stay hydrated
-- Do not self-medicate or overuse painkillers
-
-Always use this format, and adapt alternatives and tips based on the symptoms and food given by the user.`;
-
-      const inputContent = `${formatPrompt}\n\nSymptom: ${symptomsText}\nFood: ${recipeText}`;
-
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: inputContent,
+        .map(([key, _]) => key);
+      const res = await fetch('/api/recipes/ask-ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipeText,
+          preferences: preferencesList,
+          symptomsText,
+        }),
       });
-
-      console.log("Gemini API raw response:", response);
-
-      
-      const responseText = response.candidates && response.candidates.length > 0
-        ? response.candidates[0].content.text
-        : "";
-
-      
-      const finalResponseText = responseText || (typeof response.text === 'function' ? await response.text() : response.text || "");
-
-   
-      let swaps = [];
-      let nutrition = {};
-      try {
-        
-        const parsed = JSON.parse(finalResponseText);
-        swaps = parsed.swaps || [];
-        nutrition = parsed.nutrition || {};
-      } catch {
-        
-        swaps = [];
-        nutrition = {};
-        
-        if (typeof finalResponseText === 'string') {
-          
-          const swapMatches = finalResponseText.match(/- Original: (.+?)\n- Swapped: (.+?)\n- Reason: (.+?)(?=\n|$)/g);
-          if (swapMatches) {
-            const swapMap = {};
-            swapMatches.forEach(match => {
-              const parts = match.split('\n');
-              const original = parts[0].replace('- Original: ', '').trim();
-              const swapped = parts[1].replace('- Swapped: ', '').trim();
-              if (!swapMap[original]) {
-                swapMap[original] = [];
-              }
-              swapMap[original].push(swapped);
-            });
-            
-            swaps = Object.entries(swapMap).map(([from, toArray]) => ({ from, toArray }));
-          }
-          
-        } else {
-          console.error("Expected finalResponseText to be a string but got:", typeof finalResponseText, finalResponseText);
-        }
-      }
+      if (!res.ok) throw new Error('Failed to get AI response');
+      const data = await res.json();
       setResult({
         original: recipeText,
-        converted: finalResponseText,
-        swaps,
-        nutrition,
+        converted: JSON.stringify(data.ai, null, 2),
+        swaps: [],
+        nutrition: {},
       });
     } catch (error) {
-      console.error("Gemini API error:", error);
       toast({
         variant: "destructive",
         title: "Error",
         description: `Failed to transform recipe: ${error.message || error}. Please try again later.`,
+      });
+      setResult({
+        original: recipeText,
+        converted: `Error: ${error.message || error}`,
+        swaps: [],
+        nutrition: {},
       });
     } finally {
       setIsLoading(false);
@@ -231,9 +163,10 @@ Always use this format, and adapt alternatives and tips based on the symptoms an
                       onChange={(e) => setRecipeText(e.target.value)}
                     />
                     <div className="mt-4 flex items-center gap-4">
-                      <Button type="button" variant="outline">
+                      <Button type="button" variant="outline" onClick={() => document.getElementById('recipe-image-upload').click()} disabled={isProcessingImage}>
                         <Upload className="mr-2 h-4 w-4" /> Upload Image
                       </Button>
+                      <input type="file" id="recipe-image-upload" className="hidden" accept="image/*,.pdf" onChange={handleImageUpload} />
                       <p className="text-sm text-muted-foreground">or paste text above.</p>
                     </div>
                   </div>
