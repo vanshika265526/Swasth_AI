@@ -12,6 +12,7 @@ const Signup = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(false); // ✅ For "I have verified my email"
   const navigate = useNavigate();
 
   const getPasswordValidations = () =>
@@ -32,12 +33,11 @@ const Signup = () => {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
       await updateProfile(userCredential.user, { displayName: name });
-
       await sendEmailVerification(userCredential.user);
 
       localStorage.setItem("tempUserEmail", email);
       localStorage.setItem("tempUserName", name);
-      localStorage.setItem("name", name); // ✅ store name for later use
+      localStorage.setItem("name", name);
 
       setStep(2);
     } catch (error) {
@@ -49,24 +49,32 @@ const Signup = () => {
 
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
-    await auth.currentUser.reload();
-    if (auth.currentUser.emailVerified) {
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('email', localStorage.getItem("tempUserEmail"));
-      localStorage.setItem('name', localStorage.getItem("tempUserName"));
-      // Send ID token to backend to create/update user profile
-      const token = await auth.currentUser.getIdToken();
-      await fetch('http://localhost:5000/api/user/profile', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ name: localStorage.getItem("tempUserName") }),
-      });
-      navigate('/');
-    } else {
-      alert("Email not verified yet. Please check your inbox.");
+    try {
+      setVerifying(true);
+      await auth.currentUser.reload();
+      if (auth.currentUser.emailVerified) {
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('email', localStorage.getItem("tempUserEmail"));
+        localStorage.setItem('name', localStorage.getItem("tempUserName"));
+
+        const token = await auth.currentUser.getIdToken();
+        await fetch('http://localhost:5000/api/user/profile', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ name: localStorage.getItem("tempUserName") }),
+        });
+
+        navigate('/');
+      } else {
+        alert("Email not verified yet. Please check your inbox.");
+      }
+    } catch (error) {
+      alert("Verification failed: " + error.message);
+    } finally {
+      setVerifying(false);
     }
   };
 
@@ -133,9 +141,13 @@ const Signup = () => {
               Click the link sent to <strong>{email}</strong> and then press verify
             </p>
 
-            <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md" disabled={loading}>
-              {loading ? (
-                <span className="flex items-center justify-center">
+            <button
+              type="submit"
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md flex justify-center items-center"
+              disabled={verifying}
+            >
+              {verifying ? (
+                <span className="flex items-center">
                   <svg className="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
