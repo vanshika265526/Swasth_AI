@@ -29,7 +29,7 @@ if (!fs.existsSync(uploadsDir)) {
 }
 app.use('/uploads', express.static(uploadsDir));
 
-app.use('/api/users', userRoutes);
+app.use('/api/user', userRoutes);
 app.use('/api/recipes', recipeRoutes);
 app.use('/api/prescriptions', prescriptionRoutes);
 
