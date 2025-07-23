@@ -12,6 +12,11 @@ const DrugCheckerPage = () => {
     const [result, setResult] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
+    const [savedInteractions, setSavedInteractions] = useState(() => {
+    const stored = localStorage.getItem('savedInteractions');
+    return stored ? JSON.parse(stored) : [];
+});
+
 
     const handleDrugChange = (index, value) => {
         const newDrugs = [...drugs];
@@ -39,8 +44,28 @@ const DrugCheckerPage = () => {
             return;
         }
 
+
         setIsLoading(true);
         setResult(null);
+const handleSaveInteraction = () => {
+    if (!result) return;
+
+    const filledDrugs = drugs.filter(d => d.trim() !== '');
+    const interactionToSave = {
+        drugs: filledDrugs,
+        result,
+        timestamp: new Date().toISOString(),
+    };
+
+    const updated = [...savedInteractions, interactionToSave];
+    setSavedInteractions(updated);
+    localStorage.setItem('savedInteractions', JSON.stringify(updated));
+
+    toast({
+        title: "✅ Interaction Saved",
+        description: "Interaction saved. Check it out in the Saved tab!",
+    });
+};
 
         // Mock AI check
         setTimeout(() => {
