@@ -262,65 +262,95 @@ const RecipeReplacerPage = () => {
         </motion.div>
 
         <AnimatePresence>
-        {result && (
-          <>
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -50 }}
-              transition={{ duration: 0.6 }}
-              className="mt-12"
-            >
-              <h2 className="text-2xl font-bold text-center mb-6">Your Transformed Recipe ✨</h2>
-              <Card className="glassmorphism rounded-2xl">
-                <CardHeader>
-                  <CardTitle>Ingredient Swaps</CardTitle>
-                </CardHeader>
-              <CardContent>
-                <div className="text-base text-white whitespace-pre-wrap">
-                  {result.converted.split('\n').map((line, idx) => {
-                    if (line.startsWith('Tips for')) {
-                      return (
-                        <p key={idx} className="mt-4 font-semibold text-2xl text-white">
-                          {line}
-                        </p>
-                      );
-                    } else if (line.startsWith('- ')) {
-                      return (
-                        <p key={idx} className="ml-4 mt-2 font-semibold text-lg text-white">
-                          {line}
-                        </p>
-                      );
-                    } else if (line.includes('=>')) {
-                      return (
-                        <p key={idx} className="font-semibold text-lg text-white">
-                          {line}
-                        </p>
-                      );
-                    } else {
-                      return (
-                        <p key={idx} className="text-white">
-                          {line}
-                        </p>
-                      );
-                    }
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-            {/* Remove debug boxes as per user request */}
-            {/* <div className="mt-8 p-4 bg-yellow-100 rounded-lg text-sm font-mono whitespace-pre-wrap overflow-auto max-h-64">
-              <h3 className="font-bold mb-2">Debug: Raw Swaps Data</h3>
-              {JSON.stringify(result.swaps, null, 2)}
+  {result && (
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -50 }}
+        transition={{ duration: 0.6 }}
+        className="mt-12"
+      >
+        <h2 className="text-2xl font-bold text-center mb-6">Your Transformed Recipe ✨</h2>
+        <Card className="glassmorphism rounded-2xl">
+          <CardHeader>
+            <CardTitle>Ingredient Swaps</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-base text-white whitespace-pre-wrap">
+              {result.converted.split('\n').map((line, idx) => {
+                if (line.startsWith('Tips for')) {
+                  return (
+                    <p key={idx} className="mt-4 font-semibold text-2xl text-white">
+                      {line}
+                    </p>
+                  );
+                } else if (line.startsWith('- ')) {
+                  return (
+                    <p key={idx} className="ml-4 mt-2 font-semibold text-lg text-white">
+                      {line}
+                    </p>
+                  );
+                } else if (line.includes('=>')) {
+                  return (
+                    <p key={idx} className="font-semibold text-lg text-white">
+                      {line}
+                    </p>
+                  );
+                } else {
+                  return (
+                    <p key={idx} className="text-white">
+                      {line}
+                    </p>
+                  );
+                }
+              })}
             </div>
-            <div className="mt-8 p-4 bg-blue-100 rounded-lg text-sm font-mono whitespace-pre-wrap overflow-auto max-h-64">
-              <h3 className="font-bold mb-2">Debug: Full API Response Text</h3>
-              {result.converted}
-            </div> */}
-          </>
-        )}
-        </AnimatePresence>
+          </CardContent>
+        </Card>
+
+        {/* 💾 Save Recipe Button */}
+        <div className="mt-6 text-center">
+          <Button
+            variant="secondary"
+            onClick={async () => {
+              try {
+                const saveRes = await fetch('/api/saved', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    original: result.original,
+                    converted: result.converted,
+                    preferences: Object.entries(preferences)
+                      .filter(([_, v]) => v)
+                      .map(([k]) => k),
+                    symptomsText,
+                    timestamp: new Date(),
+                  }),
+                });
+
+                if (!saveRes.ok) throw new Error('Failed to save recipe');
+                toast({
+                  title: 'Recipe Saved',
+                  description: 'You can view it later in your Saved Recipes page.',
+                });
+              } catch (err) {
+                toast({
+                  variant: 'destructive',
+                  title: 'Save Failed',
+                  description: err.message || 'Something went wrong while saving.',
+                });
+              }
+            }}
+          >
+            💾 Save This Recipe
+          </Button>
+        </div>
+      </motion.div>
+    </>
+  )}
+</AnimatePresence>
+
       </div>
     </>
   );
