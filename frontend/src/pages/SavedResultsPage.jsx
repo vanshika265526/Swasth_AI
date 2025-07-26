@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UtensilsCrossed, FileText, HeartPulse } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { auth } from '../firebase';
+import axios from 'axios';
 
 const EmptyState = ({ icon, title, description }) => (
     <motion.div
@@ -19,6 +21,31 @@ const EmptyState = ({ icon, title, description }) => (
 );
 
 const SavedResultsPage = () => {
+  const [mealPlans, setMealPlans] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchMealPlans = async () => {
+      const user = auth.currentUser;
+      if (!user) {
+        setError('You must be logged in to view saved meal plans.');
+        return;
+      }
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await axios.get(`/api/mealplanner/saved/${user.uid}`);
+        setMealPlans(res.data.mealPlans || []);
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to fetch meal plans');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMealPlans();
+  }, []);
+
   return (
     <>
       <Helmet>
@@ -52,11 +79,48 @@ const SavedResultsPage = () => {
             />
           </TabsContent>
            <TabsContent value="plans">
+            {loading ? (
+              <p className="text-center text-muted-foreground">Loading...</p>
+            ) : error ? (
+              <EmptyState 
+                icon={<HeartPulse className="h-12 w-12 text-muted-foreground" />}
+                title="Error"
+                description={error}
+              />
+            ) : mealPlans.length === 0 ? (
             <EmptyState 
                 icon={<HeartPulse className="h-12 w-12 text-muted-foreground" />}
                 title="No Saved Meal Plans"
                 description="Your AI-generated meal plans will be stored here."
             />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {mealPlans.map((plan, idx) => (
+                  <Card key={plan._id || idx} className="glassmorphism rounded-2xl h-full">
+                    <CardHeader>
+                      <CardTitle>Meal Plan ({new Date(plan.createdAt).toLocaleDateString()})</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="mb-2 text-sm text-muted-foreground">Symptoms: {plan.symptoms}</div>
+                      <ul className="space-y-2 text-muted-foreground">
+                        {plan.weeklyPlan.map((day, i) => (
+                          <li key={i} className="mb-2">
+                            <span className="font-semibold text-foreground">{day.day}:</span>
+                            <ul className="ml-4">
+                              {day.meals.map((meal, j) => (
+                                <li key={j}>
+                                  <span className="font-semibold">{meal.time}:</span> {meal.dish}
+                                </li>
+                              ))}
+                            </ul>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>

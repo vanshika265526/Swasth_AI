@@ -1,4 +1,6 @@
 require('dotenv').config();
+require('dotenv').config({ path: './backend/.env' });
+const geminiApiKey = process.env.GEMINI_API_KEY;
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -23,6 +25,7 @@ const recipeRoutes = require('./routes/recipeRoutes');
 const prescriptionRoutes = require('./routes/prescriptionRoutes');
 const path = require('path');
 const fs = require('fs');
+const mealPlannerRoutes = require('./routes/mealPlannerRoutes');
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
@@ -35,6 +38,7 @@ app.use('/api/cohere', cohereRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/recipes', recipeRoutes);
 app.use('/api/prescriptions', prescriptionRoutes);
+app.use('/api/mealplanner', mealPlannerRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
