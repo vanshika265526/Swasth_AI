@@ -134,11 +134,29 @@ const PrescriptionTranslatorPage = () => {
               transition={{ duration: 0.6 }}
               className="mt-12"
             >
-              <h2 className="text-2xl font-bold text-center mb-6">AI Doctor's Explanation</h2>
+              {/* Doctor intro highlight */}
+              {typeof aiResult === 'string' && aiResult.startsWith('Hey, I am Dr. Aayush Garg') && (
+                <div className="bg-blue-100 text-blue-900 rounded-lg px-4 py-2 mb-4 font-semibold text-lg border border-blue-300">
+                  {aiResult.split(/\.|\n/)[0]}
+                </div>
+              )}
+              {/* Bullet/numbered list rendering */}
               <div className="space-y-6">
-                <pre className="bg-background/80 p-4 rounded-lg text-white whitespace-pre-wrap text-left">
-                  {JSON.stringify(aiResult, null, 2)}
-                </pre>
+                {typeof aiResult === 'string' ? (
+                  <ul className="list-disc pl-6 text-left whitespace-pre-line">
+                    {aiResult
+                      .replace(/^Hey, I am Dr. Aayush Garg, your medical advisor and helper\.?\s*/i, '')
+                      .split(/\n|\r|\d+\.|- /)
+                      .filter(line => line.trim().length > 0)
+                      .map((line, idx) => (
+                        <li key={idx}>{line.trim()}</li>
+                      ))}
+                  </ul>
+                ) : (
+                  <pre className="bg-background/80 p-4 rounded-lg text-white whitespace-pre-wrap text-left">
+                    {JSON.stringify(aiResult, null, 2)}
+                  </pre>
+                )}
               </div>
             </motion.div>
           )}

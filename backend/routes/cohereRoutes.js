@@ -1,3 +1,4 @@
+console.log('=== cohereRoutes.js LOADED ===');
 const { CohereClient } = require("cohere-ai");
 
 const router = require("express").Router();
@@ -7,6 +8,7 @@ const cohere = new CohereClient({
 });
 
 router.post("/check", async (req, res) => {
+  console.log('/api/cohere/check endpoint called'); // Log when endpoint is hit
   const { drugs } = req.body;
 
   if (!drugs || drugs.length < 2) {

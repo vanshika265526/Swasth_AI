@@ -1,3 +1,4 @@
+console.log('=== THIS IS THE REAL BACKEND INDEX.JS ===');
 require('dotenv').config();
 require('dotenv').config({ path: './backend/.env' });
 const geminiApiKey = process.env.GEMINI_API_KEY;

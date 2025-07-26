@@ -263,91 +263,123 @@ const RecipeReplacerPage = () => {
 
         <AnimatePresence>
   {result && (
-    <>
-      <motion.div
-        initial={{ opacity: 0, y: 50 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -50 }}
-        transition={{ duration: 0.6 }}
-        className="mt-12"
-      >
-        <h2 className="text-2xl font-bold text-center mb-6">Your Transformed Recipe ✨</h2>
-        <Card className="glassmorphism rounded-2xl">
-          <CardHeader>
-            <CardTitle>Ingredient Swaps</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-base text-white whitespace-pre-wrap">
-              {result.converted.split('\n').map((line, idx) => {
-                if (line.startsWith('Tips for')) {
-                  return (
-                    <p key={idx} className="mt-4 font-semibold text-2xl text-white">
-                      {line}
-                    </p>
-                  );
-                } else if (line.startsWith('- ')) {
-                  return (
-                    <p key={idx} className="ml-4 mt-2 font-semibold text-lg text-white">
-                      {line}
-                    </p>
-                  );
-                } else if (line.includes('=>')) {
-                  return (
-                    <p key={idx} className="font-semibold text-lg text-white">
-                      {line}
-                    </p>
-                  );
-                } else {
-                  return (
-                    <p key={idx} className="text-white">
-                      {line}
-                    </p>
-                  );
-                }
-              })}
-            </div>
-          </CardContent>
-        </Card>
+    <motion.div
+      initial={{ opacity: 0, y: 50 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -50 }}
+      transition={{ duration: 0.6 }}
+      className="mt-12"
+    >
+      <h2 className="text-2xl font-bold text-center mb-6">Your Transformed Recipe ✨</h2>
+      <Card className="glassmorphism rounded-2xl">
+        <CardHeader>
+          <CardTitle>Transformed Recipe & Recommendations</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {/* Parse and render the API response */}
+          {(() => {
+            let content;
+            try {
+              // Attempt to parse result.converted as JSON
+              content = typeof result.converted === 'string' ? JSON.parse(result.converted) : result.converted;
+            } catch (e) {
+              // Fallback to string if not JSON
+              content = result.converted;
+            }
 
-        {/* 💾 Save Recipe Button */}
-        <div className="mt-6 text-center">
-          <Button
-            variant="secondary"
-            onClick={async () => {
-              try {
-                const saveRes = await fetch('/api/saved', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    original: result.original,
-                    converted: result.converted,
-                    preferences: Object.entries(preferences)
-                      .filter(([_, v]) => v)
-                      .map(([k]) => k),
-                    symptomsText,
-                    timestamp: new Date(),
-                  }),
-                });
+            // If content is a string, split and clean it; otherwise, use structured data
+            if (typeof content === 'string') {
+              // Replace literal \n with actual line breaks and split
+              const lines = content.replace(/\\n/g, '\n').split('\n').filter(line => line.trim());
+              
+              return (
+                <div className="text-base text-white">
+                  <p className="font-semibold text-lg mb-4">Hey, I am Doctor Aayush Garg</p>
+                  {lines.map((line, idx) => {
+                    if (line.startsWith('### ')) {
+                      return (
+                        <h3 key={idx} className="mt-6 font-bold text-xl text-white">
+                          {line.replace('### ', '')}
+                        </h3>
+                      );
+                    } else if (line.startsWith('- ')) {
+                      return (
+                        <li key={idx} className="ml-4 mt-2 text-lg text-white">
+                          {line.replace('- ', '')}
+                        </li>
+                      );
+                    } else {
+                      return (
+                        <p key={idx} className="mt-2 text-white">
+                          {line}
+                        </p>
+                      );
+                    }
+                  })}
+                </div>
+              );
+            } else {
+              // Handle structured JSON response
+              const { greeting = "Hey, I am Doctor Aayush Garg", sections = [] } = content;
 
-                if (!saveRes.ok) throw new Error('Failed to save recipe');
-                toast({
-                  title: 'Recipe Saved',
-                  description: 'You can view it later in your Saved Recipes page.',
-                });
-              } catch (err) {
-                toast({
-                  variant: 'destructive',
-                  title: 'Save Failed',
-                  description: err.message || 'Something went wrong while saving.',
-                });
-              }
-            }}
-          >
-            💾 Save This Recipe
-          </Button>
-        </div>
-      </motion.div>
-    </>
+              return (
+                <div className="text-base text-white">
+                  <p className="font-semibold text-lg mb-4">{greeting}</p>
+                  {sections.map((section, idx) => (
+                    <div key={idx} className="mb-6">
+                      <h3 className="font-bold text-xl text-white">{section.title}</h3>
+                      <ul className="list-disc ml-6 mt-2">
+                        {section.items.map((item, itemIdx) => (
+                          <li key={itemIdx} className="text-lg text-white">{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              );
+            }
+          })()}
+        </CardContent>
+      </Card>
+
+      {/* Save Recipe Button */}
+      <div className="mt-6 text-center">
+        <Button
+          variant="secondary"
+          onClick={async () => {
+            try {
+              const saveRes = await fetch('/api/saved', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  original: result.original,
+                  converted: result.converted,
+                  preferences: Object.entries(preferences)
+                    .filter(([_, v]) => v)
+                    .map(([k]) => k),
+                  symptomsText,
+                  timestamp: new Date(),
+                }),
+              });
+
+              if (!saveRes.ok) throw new Error('Failed to save recipe');
+              toast({
+                title: 'Recipe Saved',
+                description: 'You can view it later in your Saved Recipes page.',
+              });
+            } catch (err) {
+              toast({
+                variant: 'destructive',
+                title: 'Save Failed',
+                description: err.message || 'Something went wrong while saving.',
+              });
+            }
+          }}
+        >
+          💾 Save This Recipe
+        </Button>
+      </div>
+    </motion.div>
   )}
 </AnimatePresence>
 
