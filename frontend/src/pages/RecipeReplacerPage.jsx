@@ -294,7 +294,7 @@ const RecipeReplacerPage = () => {
               
               return (
                 <div className="text-base text-white">
-                  <p className="font-semibold text-lg mb-4">Hey, I am Doctor Aayush Garg</p>
+                 
                   {lines.map((line, idx) => {
                     if (line.startsWith('### ')) {
                       return (
@@ -319,8 +319,7 @@ const RecipeReplacerPage = () => {
                 </div>
               );
             } else {
-              // Handle structured JSON response
-              const { greeting = "Hey, I am Doctor Aayush Garg", sections = [] } = content;
+              
 
               return (
                 <div className="text-base text-white">
@@ -342,43 +341,7 @@ const RecipeReplacerPage = () => {
         </CardContent>
       </Card>
 
-      {/* Save Recipe Button */}
-      <div className="mt-6 text-center">
-        <Button
-          variant="secondary"
-          onClick={async () => {
-            try {
-              const saveRes = await fetch('/api/saved', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  original: result.original,
-                  converted: result.converted,
-                  preferences: Object.entries(preferences)
-                    .filter(([_, v]) => v)
-                    .map(([k]) => k),
-                  symptomsText,
-                  timestamp: new Date(),
-                }),
-              });
-
-              if (!saveRes.ok) throw new Error('Failed to save recipe');
-              toast({
-                title: 'Recipe Saved',
-                description: 'You can view it later in your Saved Recipes page.',
-              });
-            } catch (err) {
-              toast({
-                variant: 'destructive',
-                title: 'Save Failed',
-                description: err.message || 'Something went wrong while saving.',
-              });
-            }
-          }}
-        >
-          💾 Save This Recipe
-        </Button>
-      </div>
+     
     </motion.div>
   )}
 </AnimatePresence>
