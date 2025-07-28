@@ -11,9 +11,9 @@ import PrescriptionTranslatorPage from '@/pages/PrescriptionTranslatorPage';
 import MealPlannerPage from '@/pages/MealPlannerPage';
 import DrugCheckerPage from '@/pages/DrugCheckerPage';
 import VoiceAssistantPage from '@/pages/VoiceAssistantPage';
-import SavedResultsPage from '@/pages/SavedResultsPage';
+
 import ProfilePage from '@/pages/ProfilePage';
-import AdminPage from '@/pages/AdminPage';
+
 import Login from '@/pages/Login';
 import Signup from '@/pages/Signup';
 import Logout from '@/pages/Logout';
@@ -37,9 +37,9 @@ function App() {
                 <Route path="/meal-planner" element={<MealPlannerPage />} />
                 <Route path="/drug-checker" element={<DrugCheckerPage />} />
                 <Route path="/voice-assistant" element={<VoiceAssistantPage />} />
-                <Route path="/saved" element={<SavedResultsPage />} />
+                
                 <Route path="/profile" element={<ProfilePage />} />
-                <Route path="/admin" element={<AdminPage />} />
+              
             </Routes>
 
           </main>
