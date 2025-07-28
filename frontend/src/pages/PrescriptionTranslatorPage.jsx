@@ -135,7 +135,7 @@ const PrescriptionTranslatorPage = () => {
               className="mt-12"
             >
               {/* Doctor intro highlight */}
-              {typeof aiResult === 'string' && aiResult.startsWith('Hey, I am Dr. Aayush Garg') && (
+              {typeof aiResult === 'string' && aiResult.startsWith('Hey, I am Swasth AI') && (
                 <div className="bg-blue-100 text-blue-900 rounded-lg px-4 py-2 mb-4 font-semibold text-lg border border-blue-300">
                   {aiResult.split(/\.|\n/)[0]}
                 </div>
@@ -145,7 +145,7 @@ const PrescriptionTranslatorPage = () => {
                 {typeof aiResult === 'string' ? (
                   <ul className="list-disc pl-6 text-left whitespace-pre-line">
                     {aiResult
-                      .replace(/^Hey, I am Dr. Aayush Garg, your medical advisor and helper\.?\s*/i, '')
+                      .replace(/^Hey, I am Swasth AI, your medical advisor and helper\.?\s*/i, '')
                       .split(/\n|\r|\d+\.|- /)
                       .filter(line => line.trim().length > 0)
                       .map((line, idx) => (
