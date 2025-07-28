@@ -47,7 +47,7 @@ const HomePage = () => {
   return (
     <>
       <Helmet>
-        <title>Aayush Swasth - AI-Powered Health & Recipe Assistant</title>
+        <title>Swasth - AI-Powered Health & Recipe Assistant</title>
         <meta
           name="description"
           content="Your personal AI health assistant for translating medical prescriptions and finding safe ingredient replacements for your diet."
