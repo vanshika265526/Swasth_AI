@@ -7,7 +7,6 @@ const navItems = [
   { path: '/', label: 'Home', icon: Home },
   { path: '/recipe-replacer', label: 'Recipes', icon: UtensilsCrossed },
   { path: '/prescription-translator', label: 'Scripts', icon: Stethoscope },
-  { path: '/saved', label: 'Saved', icon: HeartPulse },
   { path: '/profile', label: 'Profile', icon: User },
 ];
 
